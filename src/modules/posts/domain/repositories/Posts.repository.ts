@@ -32,6 +32,11 @@ export class PostsRepository implements IPostsRepository {
     return PostMapper.toDomain(result);
   }
 
+  async getPostsPaginated(page: number, limit: number): Promise<Post[]> {
+    const result = await this.postDao.getPostsPaginated(page, limit);
+    return result.map(PostMapper.toDomain);
+  }
+
   async save(post: Post): Promise<Post> {
     const tempPost = PostMapper.toPersistence(post);
     const result = await this.postDao.save(tempPost);

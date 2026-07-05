@@ -29,4 +29,14 @@ export interface IPostsRepository {
    * @throws Error If the post is not found or cannot be deleted.
    */
   delete(post: Post): Promise<boolean>;
+
+  /**
+   * Retrieves a paginated list of posts.
+   *
+   * @param page The page number (1-based).
+   * @param limit The number of posts per page.
+   * @returns A promise that resolves to an array of posts.
+   * @throws Error If the posts cannot be retrieved.
+   */
+  getPostsPaginated(page: number, limit: number): Promise<Post[]>;
 }
