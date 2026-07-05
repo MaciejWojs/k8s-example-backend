@@ -7,7 +7,11 @@ echo "Running Prettier for code formatting..."
 lint-staged
 
 echo "Checking for secrets with Gitleaks..."
-git diff --cached --name-only | xargs bun run gitleaks file -v --no-banner
+
+for i in $(git diff --cached --name-only); do
+    echo "Checking file: $i"
+    bun run gitleaks file -v --no-banner "$i"
+done
 
 echo "Running TypeScript type checks..."
 bun typecheck
