@@ -1,0 +1,56 @@
+name: k8s-zadanie
+services:
+  db:
+    image: postgres:18.3-alpine3.23
+    container_name: k8s-Postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    ports:
+      - '127.0.0.1:5432:5432'
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}']
+      start_period: 5s
+      interval: 30s
+      timeout: 5s
+      retries: 5
+    networks:
+      - backend
+      # volumes:
+      # - postgres_data:/var/lib/postgresql/data
+
+  app:
+    image:   k8s-app:latest
+    # container_name: backend
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: k8s-app-backend
+    restart: unless-stopped
+    networks:
+      - backend
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:3000/api/v1/health']
+      start_period: 3s
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    develop:
+      watch:
+        - action: rebuild
+          path: ./src/**/*.ts
+        - action: restart
+          path: .env
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+      DEVELOPMENT: ${DEVELOPMENT} # true or false
+
+  
+networks:
+  backend:
+    driver: bridge
+
+# volumes:
+#   postgres_data:
