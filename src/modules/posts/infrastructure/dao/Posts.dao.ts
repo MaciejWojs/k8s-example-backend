@@ -28,6 +28,18 @@ export class PostDao implements IPostsDao {
     return post[0] ?? null;
   }
 
+  async getPostsPaginated(
+    page: number = -1,
+    limit: number = -1
+  ): Promise<Post[]> {
+    const offset = (page - 1) * limit;
+    const posts =
+      limit <= 0 || page <= 0
+        ? await db.select().from(postsTable)
+        : await db.select().from(postsTable).limit(limit).offset(offset);
+    return posts;
+  }
+
   async save(post: Post) {
     const [updatedPost] = await db
       .update(postsTable)
