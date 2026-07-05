@@ -1,0 +1,13 @@
+if [ -z "$(git diff --cached --name-only)" ]; then
+echo "No staged changes to commit. Skipping pre-commit checks."
+exit 0
+fi
+
+echo "Running Prettier for code formatting..."
+lint-staged
+
+echo "Checking for secrets with Gitleaks..."
+git diff --cached --name-only | xargs bun run gitleaks file -v --no-banner
+
+echo "Running TypeScript type checks..."
+bun typecheck
