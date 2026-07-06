@@ -15,6 +15,16 @@ export class PostMapper {
     );
   }
 
+  static toDTO(post: Post) {
+    return {
+      id: post.id.value,
+      title: post.title.value,
+      content: post.content.value,
+      createdAt: post.createdAt,
+      updatedAt: post.updatedAt
+    };
+  }
+
   static toPersistence(post: Post): PostDB {
     return {
       id: post.id.value,
