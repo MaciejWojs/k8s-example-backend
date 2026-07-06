@@ -14,11 +14,9 @@ postsRouter.get("/", async (c) => {
   const dao = new PostDao();
   const repository = new PostsRepository(dao);
   const getPostsPaginated = new GetPostsPaginated(repository);
-  console.log(`Fetching posts with page: ${page}, limit: ${limit}`);
 
   const postsDomain = await getPostsPaginated.execute(page, limit);
   const posts = postsDomain.map((post) => PostMapper.toDTO(post));
-  console.log("Retrieved posts:", posts);
 
   return c.json(posts);
 });
