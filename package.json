@@ -11,8 +11,8 @@
     "migrate": "bun --bun drizzle-kit migrate",
     "generate": "bun --bun drizzle-kit generate",
     "push": "bun --bun drizzle-kit push",
-    "reset": "bun run --bun src/infrastucture/db/reset-db.ts",
-    "seed": "bun run --bun src/infrastucture/db/seed.ts",
+    "reset": "bun run --bun src/infrastructure/db/reset-db.ts",
+    "seed": "bun run --bun src/infrastructure/db/seed.ts",
     "typecheck": "bunx --bun tsc -p tsconfig.json --noEmit",
     "lint": "eslint . --ext .ts,.tsx,.js,.jsx",
     "lint:fix": "eslint . --ext .ts,.tsx,.js,.jsx --fix"
