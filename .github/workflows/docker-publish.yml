@@ -2,8 +2,6 @@ name: Publish k8s-backend Docker image to GHCR
 
 on:
   push:
-    branches:
-      - main
     tags:
       - "v*"
 
@@ -38,7 +36,7 @@ jobs:
           images: ghcr.io/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}
           tags: |
             type=raw,value=latest,enable={{is_default_branch}}
-            type=ref,event=tag
+            type=semver,pattern={{version}}
 
       - name: Build and push
         uses: docker/build-push-action@v7
