@@ -17,8 +17,7 @@ WORKDIR /app
 RUN apk add --no-cache curl  
 COPY --from=builder /workdir/.dist /app/.dist
 COPY --from=builder /workdir/package.json /app/
-# COPY --from=builder /workdir/prisma /app/prisma
-# COPY --from=builder /workdir/prisma.config.ts /app/
+COPY --from=builder /workdir/drizzle /app/drizzle
 
 EXPOSE 3000
 
