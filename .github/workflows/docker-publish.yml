@@ -63,6 +63,18 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
+      - name: Set up environment variables
+        shell: bash
+        run: |
+         TAG="${{ github.ref_name }}"
+         VERSION="${TAG#v}"
+ 
+         IMAGE_NAME_FINAL="${{ github.repository_owner }}/${{ env.IMAGE_NAME }}-migrations:${VERSION}"
+         IMAGE_NAME_FINAL=$(echo "$IMAGE_NAME_FINAL" | tr '[:upper:]' '[:lower:]')
+
+         echo "IMAGE_NAME_FINAL=$IMAGE_NAME_FINAL"
+         echo "IMAGE_NAME_FINAL=$IMAGE_NAME_FINAL" >> "$GITHUB_ENV"
+
       - name: Install ORAS
         uses: oras-project/setup-oras@v1
       - name: Push migrations artifact
@@ -72,7 +84,7 @@ jobs:
             -p ${{ secrets.GITHUB_TOKEN }}
 
           oras push \
-            ghcr.io/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}-migrations:${{ github.ref_name }} \
+            ghcr.io/$IMAGE_NAME_FINAL \
             atlas/:application/vnd.atlas.migration.layer.v1+sql
   template: 
     runs-on: ubuntu-latest
