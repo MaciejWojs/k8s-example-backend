@@ -52,45 +52,10 @@ jobs:
 
           cache-from: type=gha
           cache-to: type=gha,mode=max
-  
-  migrations:
-    needs: push
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
-
-    steps:
-      - uses: actions/checkout@v7
-
-      - name: Set up environment variables
-        shell: bash
-        run: |
-         TAG="${{ github.ref_name }}"
-         VERSION="${TAG#v}"
- 
-         IMAGE_NAME_FINAL="${{ github.repository_owner }}/${{ env.IMAGE_NAME }}-migrations:${VERSION}"
-         IMAGE_NAME_FINAL=$(echo "$IMAGE_NAME_FINAL" | tr '[:upper:]' '[:lower:]')
-
-         echo "IMAGE_NAME_FINAL=$IMAGE_NAME_FINAL"
-         echo "IMAGE_NAME_FINAL=$IMAGE_NAME_FINAL" >> "$GITHUB_ENV"
-
-      - name: Install ORAS
-        uses: oras-project/setup-oras@v1
-      - name: Push migrations artifact
-        run: |
-          oras login ghcr.io \
-            -u ${{ github.actor }} \
-            -p ${{ secrets.GITHUB_TOKEN }}
-
-          oras push \
-            ghcr.io/$IMAGE_NAME_FINAL \
-            atlas/:application/vnd.atlas.migration.layer.v1+sql
   template: 
     runs-on: ubuntu-latest
     needs: 
       - push
-      - migrations
     steps:
       - name: status check
         run: echo "All jobs completed successfully"
