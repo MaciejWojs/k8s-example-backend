@@ -14,10 +14,12 @@ FROM oven/bun:1.3.14-alpine
 
 WORKDIR /app
 
-RUN apk add --no-cache curl  
+RUN apk add --no-cache curl
 COPY --from=builder /workdir/.dist /app/.dist
 COPY --from=builder /workdir/package.json /app/
-COPY --from=builder /workdir/drizzle /app/drizzle
+COPY --from=builder /workdir/atlas /app/atlas
+COPY --from=builder /workdir/atlas.hcl /app/atlas.hcl
+COPY --from=arigaio/atlas:1.2.3-distroless /atlas /usr/local/bin/atlas
 
 EXPOSE 3000
 

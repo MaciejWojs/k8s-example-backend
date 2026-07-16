@@ -1,7 +1,8 @@
 *
-!drizzle/
 !src/
 !bun.lock
 !package.json
 !tsconfig.json
 !drizzle.config.ts
+!atlas/
+!atlas.hcl
