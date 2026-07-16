@@ -3,6 +3,8 @@ echo "No staged changes to commit. Skipping pre-commit checks."
 exit 0
 fi
 
+atlas migrate diff --env local || echo "Migration diff failed. Please check atlas configuration and docker setup."
+
 echo "Running Prettier for code formatting..."
 lint-staged
 
