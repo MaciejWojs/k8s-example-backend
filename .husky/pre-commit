@@ -3,17 +3,21 @@ echo "No staged changes to commit. Skipping pre-commit checks."
 exit 0
 fi
 
+echo "Running Atlas migration diff..."
 atlas migrate diff --env local || echo "Migration diff failed. Please check atlas configuration and docker setup."
+echo
 
 echo "Running Prettier for code formatting..."
 lint-staged
+echo 
 
 echo "Checking for secrets with Gitleaks..."
-
 for i in $(git diff --cached --name-only); do
     echo "Checking file: $i"
     bun run gitleaks file -v --no-banner "$i"
+    echo
 done
 
 echo "Running TypeScript type checks..."
 bun typecheck
+echo
