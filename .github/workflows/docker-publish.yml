@@ -94,10 +94,10 @@ jobs:
         shell: bash
         run: |
           export VERSION=${{ needs.push.outputs.image_url }}
-          yq eval-all -i '(. | select(.kind == "Deployment").spec.template.spec.containers[] | select(.name=="backend").image) = env(VERSION)' k8s-example/k8s-example-backend.yaml
+          yq eval-all -i '(. | select(.kind == "Deployment").spec.template.spec.containers[] | select(.name=="backend").image) = env(VERSION)' k8s-example/backend/backend.yaml
 
-          yq eval-all -i '(. | select(.kind == "Job").spec.template.spec.containers[] | select(.name=="atlas").image) = env(VERSION)' k8s-example/k8s-example-backend-migrate.yaml
-          yq eval-all -i '(. | select(.kind == "Job").spec.template.spec.containers[] | select(.name=="seed-db").image) = env(VERSION)' k8s-example/k8s-example-backend-seed.yaml
+          yq eval-all -i '(. | select(.kind == "Job").spec.template.spec.containers[] | select(.name=="atlas").image) = env(VERSION)' k8s-example/backend/jobs/migrate.yaml
+          yq eval-all -i '(. | select(.kind == "Job").spec.template.spec.containers[] | select(.name=="seed-db").image) = env(VERSION)' k8s-example/backend/jobs/seed.yaml
       - name: Commit and push changes
         run: |
           git add .
