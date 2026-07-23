@@ -46,6 +46,7 @@
     "drizzle-kit": "1.0.0-rc.4-5d5b77c",
     "drizzle-orm": "1.0.0-rc.4-5d5b77c",
     "hono": "^4.12.31",
+    "node-vault": "^0.12.0",
     "zod": "^4.4.3"
   },
   "lint-staged": {
