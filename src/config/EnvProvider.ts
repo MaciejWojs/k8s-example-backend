@@ -1,37 +1,102 @@
 import { env } from "bun";
 
-import { type ENV, envSchema } from "./env";
+import {
+  type ENV,
+  envSchema,
+  preEnvSchema,
+  vaultMustHaveEnvSchema
+} from "./env";
+import { VaultProvider } from "./VaultProvider";
 
 class EnvProvider {
   private static instance: EnvProvider | undefined;
 
-  private readonly config: ENV;
+  readonly #config: ENV;
 
-  private constructor(environment: Record<string, string | undefined> = env) {
+  private constructor(config: ENV) {
+    this.#config = config;
+  }
+
+  static async create(
+    environment: Record<string, string | undefined> = env
+  ): Promise<EnvProvider> {
+    const preEnvResult = preEnvSchema.safeParse(environment);
+    if (!preEnvResult.success) {
+      console.error(
+        "Pre-environment variables validation failed:",
+        preEnvResult.error
+      );
+      process.exit(1);
+    }
+
+    if (!preEnvResult.data.USE_VAULT) {
+      console.warn(
+        "Vault is not used. Using environment variables for configuration."
+      );
+
+      const envResult = envSchema.safeParse(environment);
+      if (!envResult.success) {
+        console.error(
+          "Environment variables validation failed:",
+          envResult.error
+        );
+        process.exit(1);
+      }
+
+      return new EnvProvider(envResult.data);
+    }
+
+    const vaultEnvResult = vaultMustHaveEnvSchema.safeParse(environment);
+    if (!vaultEnvResult.success) {
+      console.error(
+        "Vault must have environment variables validation failed:",
+        vaultEnvResult.error
+      );
+      process.exit(1);
+    }
+
+    const vaultEnv = vaultEnvResult.data;
+    const vaultProvider = new VaultProvider(vaultEnv.VAULT_ADDR);
+
     try {
-      this.config = envSchema.parse(environment);
-    } catch (error) {
-      console.error("Environment variables validation failed:", error);
+      await vaultProvider.login(vaultEnv.VAULT_ROLE);
+      const secrets = await vaultProvider.readSecret<Record<string, string>>(
+        vaultEnv.VAULT_SECRET_PATH
+      );
+
+      const merged = { ...environment, ...secrets };
+      const envResult = envSchema.safeParse(merged);
+      if (!envResult.success) {
+        console.error(
+          "Environment variables validation failed:",
+          envResult.error
+        );
+        process.exit(1);
+      }
+
+      return new EnvProvider(envResult.data);
+    } catch (err) {
+      console.error("Vault initialization failed:", err);
       process.exit(1);
     }
   }
 
-  public static getInstance(
+  static async getInstance(
     environment?: Record<string, string | undefined>
-  ): EnvProvider {
+  ): Promise<EnvProvider> {
     if (!EnvProvider.instance) {
-      EnvProvider.instance = new EnvProvider(environment ?? env);
+      EnvProvider.instance = await EnvProvider.create(environment ?? env);
     }
     return EnvProvider.instance;
   }
 
   get<K extends keyof ENV>(key: K): ENV[K] {
-    return this.config[key];
+    return this.#config[key];
   }
 
   getConfig(): ENV {
-    return { ...this.config };
+    return { ...this.#config };
   }
 }
 
-export const envProvider = EnvProvider.getInstance();
+export { EnvProvider };

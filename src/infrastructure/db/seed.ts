@@ -29,8 +29,8 @@ export async function seedDatabase(env: ENV) {
 }
 
 if (require.main === module) {
-  const envProvider = await import("../../config/EnvProvider");
-  const env = envProvider.envProvider.getConfig();
+  const { EnvProvider } = await import("../../config/EnvProvider");
+  const env = (await EnvProvider.getInstance()).getConfig();
   seedDatabase(env).catch((error) => {
     console.error("Database seeding failed", error);
     process.exit(1);
