@@ -5,7 +5,6 @@ import { showRoutes } from "hono/dev";
 import { logger } from "hono/logger";
 
 import { EnvProvider } from "./config/EnvProvider";
-import { runMigrations } from "./infrastructure/db/migrate";
 import { seedDatabase } from "./infrastructure/db/seed";
 import postsRouter from "./modules/posts/api/posts.routes";
 
@@ -14,7 +13,6 @@ const appConfig = envProvider.getConfig();
 
 console.info("Waiting for the database to be ready...");
 await sleep(2000);
-await runMigrations(appConfig);
 await seedDatabase(appConfig);
 
 const app = new Hono().basePath("/api/v1");
