@@ -17,7 +17,7 @@ export class VaultProvider {
       "utf8"
     );
 
-    const result = await this.#client.kubernetesLogin({
+    const result = await this.#client.write("auth/kubernetes/login", {
       role,
       jwt
     });
