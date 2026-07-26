@@ -64,8 +64,12 @@ class EnvProvider {
         vaultEnv.VAULT_SECRET_PATH
       );
 
+      console.info("Successfully retrieved secrets from Vault:", secrets);
+
       const merged = { ...environment, ...secrets };
       const envResult = envSchema.safeParse(merged);
+
+      console.info("Merged environment variables:", merged);
       if (!envResult.success) {
         console.error(
           "Environment variables validation failed:",
