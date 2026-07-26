@@ -17,7 +17,7 @@ export function initDb(databaseUrl: string): Db {
   return dbInstance;
 }
 
-function getDb(): Db {
+export function getDb(): Db {
   if (!dbInstance) {
     throw new Error(
       "Database client not initialized. Call initDb() after EnvProvider.getInstance()."

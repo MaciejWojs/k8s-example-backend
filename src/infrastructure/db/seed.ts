@@ -1,7 +1,7 @@
 import { reset, seed } from "drizzle-seed";
 
 import type { ENV } from "../../config/env";
-import { db } from "./client";
+import { getDb } from "./client";
 import * as schema from "./schema";
 
 /**
@@ -24,15 +24,15 @@ export async function seedDatabase(env: ENV) {
   }
 
   console.info("Resetting and seeding the database...");
-  await reset(db, schema);
-  await seed(db, schema);
+  const database = getDb();
+  await reset(database, schema);
+  await seed(database, schema);
 }
 
 if (require.main === module) {
   const { EnvProvider } = await import("../../config/EnvProvider");
   const { initDb } = await import("./client");
   const env = (await EnvProvider.getInstance()).getConfig();
-  console.log(env.DATABASE_URL.slice(0, 15));
   initDb(env.DATABASE_URL);
   seedDatabase(env).catch((error) => {
     console.error("Database seeding failed", error);
