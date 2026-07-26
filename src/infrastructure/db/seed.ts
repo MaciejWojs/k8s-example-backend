@@ -32,6 +32,7 @@ if (require.main === module) {
   const { EnvProvider } = await import("../../config/EnvProvider");
   const { initDb } = await import("./client");
   const env = (await EnvProvider.getInstance()).getConfig();
+  console.log(env.DATABASE_URL.slice(0, 15));
   initDb(env.DATABASE_URL);
   seedDatabase(env).catch((error) => {
     console.error("Database seeding failed", error);
