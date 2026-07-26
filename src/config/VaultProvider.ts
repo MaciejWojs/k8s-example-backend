@@ -28,7 +28,7 @@ export class VaultProvider {
   async readSecret<T extends Record<string, string>>(path: string): Promise<T> {
     const result = await this.#client.read(path);
 
-    console.info("Vault secret read successfully:");
+    console.info("Vault secret read successfully");
 
     return result.data.data as T;
   }
