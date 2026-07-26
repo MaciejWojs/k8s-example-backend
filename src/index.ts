@@ -5,11 +5,13 @@ import { showRoutes } from "hono/dev";
 import { logger } from "hono/logger";
 
 import { EnvProvider } from "./config/EnvProvider";
+import { initDb } from "./infrastructure/db/client";
 import { seedDatabase } from "./infrastructure/db/seed";
 import postsRouter from "./modules/posts/api/posts.routes";
 
 const envProvider = await EnvProvider.getInstance();
 const appConfig = envProvider.getConfig();
+initDb(appConfig.DATABASE_URL);
 
 console.info("Waiting for the database to be ready...");
 await sleep(2000);
