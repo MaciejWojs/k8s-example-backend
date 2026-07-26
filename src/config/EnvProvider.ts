@@ -77,6 +77,11 @@ class EnvProvider {
       return new EnvProvider(envResult.data);
     } catch (err) {
       console.error("Vault initialization failed:", err);
+      //eslint-disable-next-line @typescript-eslint/no-explicit-any
+      console.error("Vault error body:", (err as any).response?.body);
+      //eslint-disable-next-line @typescript-eslint/no-explicit-any
+      console.error("Vault error status code:", (err as any).response?.statusCode);
+      
       process.exit(1);
     }
   }
