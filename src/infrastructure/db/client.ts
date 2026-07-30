@@ -15,7 +15,10 @@ function createDrizzle(databaseUrl: string) {
 let dbInstance: Db | undefined;
 
 export function initDb(databaseUrl: string): Db {
+  console.info("Initializing database client...");
+  console.info("Database connection URL:", databaseUrl.slice(0, 20) + "...");
   if (!dbInstance) {
+    console.info("Creating new database client...");
     dbInstance = createDrizzle(databaseUrl);
   }
   return dbInstance;
