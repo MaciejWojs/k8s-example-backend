@@ -4,7 +4,11 @@ import { drizzle } from "drizzle-orm/bun-sql";
 type Db = ReturnType<typeof createDrizzle>;
 
 function createDrizzle(databaseUrl: string) {
-  const sqlClient = new SQL(databaseUrl);
+  const dbUrl = databaseUrl.trim();
+  if (!dbUrl) {
+    throw new Error("Database URL is not provided. Please set DATABASE_URL.");
+  }
+  const sqlClient = new SQL(dbUrl);
   return drizzle({ client: sqlClient, logger: true, jit: true });
 }
 

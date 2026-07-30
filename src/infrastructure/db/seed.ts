@@ -34,6 +34,9 @@ if (import.meta.main) {
   const { initDb } = await import("./client");
 
   const env = (await EnvProvider.getInstance()).getConfig();
+  if (env.DEVELOPMENT) {
+    console.info("Database connection URL:", env.DATABASE_URL);
+  }
   initDb(env.DATABASE_URL);
 
   seedDatabase(env).catch((error) => {
