@@ -180,6 +180,12 @@ Configuration is validated at startup with Zod (`src/config/env.ts`). Boolean va
 
 When Vault is enabled, the app logs in with the pod's ServiceAccount JWT (`/var/run/secrets/kubernetes.io/serviceaccount/token`), reads the secret at `VAULT_SECRET_PATH`, and merges it with the process environment. Values from Vault override variables with the same name.
 
+| Workload | `VAULT_ROLE` | `VAULT_SECRET_PATH` |
+|----------|--------------|---------------------|
+| Backend Deployment | `myapp` | `secret/data/myapp` |
+| ArgoCD migrate Job | `migrate` | `secret/data/migrate` |
+| ArgoCD seed Job | `seed` | `secret/data/seed` |
+
 The secret in Vault should contain at least:
 
 ```json
@@ -214,7 +220,7 @@ That repository contains everything needed to deploy the full stack (frontend, b
 When deployed via k8s-example-iac, the backend typically runs with:
 
 - `USE_VAULT=true` — configuration loaded from Vault at startup
-- `PERFORM_DATABASE_MIGRATIONS=false` and `PERFORM_DATABASE_SEEDING=false` — migrations (`atlas migrate apply`) and seeding (`bun seed`) run as ArgoCD PreSync Jobs before the Deployment is updated
+- `PERFORM_DATABASE_MIGRATIONS=false` and `PERFORM_DATABASE_SEEDING=false` — migrations (`atlas migrate apply` in a PreSync Job, with `DATABASE_URL` from Vault Agent Injector) and seeding (`bun seed`, Vault via `EnvProvider`) run before the Deployment is updated.
 - Image from GHCR: `ghcr.io/maciejwojs/k8s-example-backend:<tag>`
 
 The application itself does not ship Kubernetes manifests — only the container image and the environment contract documented above.

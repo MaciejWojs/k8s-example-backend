@@ -61,7 +61,10 @@ class EnvProvider {
       const secrets = await vaultProvider.readSecret<Record<string, string>>(
         vaultEnv.VAULT_SECRET_PATH
       );
-      return { ...environment, ...secrets };
+      const trimmedSecrets = Object.fromEntries(
+        Object.entries(secrets).map(([key, value]) => [key, value.trim()])
+      );
+      return { ...environment, ...trimmedSecrets };
     } catch (err) {
       console.error("Vault initialization failed:", err);
       process.exit(1);
