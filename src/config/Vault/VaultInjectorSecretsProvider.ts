@@ -41,10 +41,16 @@ function parseSecretsFile(
 
     const dataObjectResult = subDataObjectSchema.safeParse(parsed);
     if (dataObjectResult.success) {
+      console.debug(
+        `Vault injector secrets file ${filePath} contains a "data" object; using that for secrets`
+      );
       const dataObject = dataObjectResult.data.data;
       return validateStringValues(dataObject);
     }
 
+    console.debug(
+      `Vault injector secrets file ${filePath} does not contain a "data" object; using the top-level object for secrets`
+    );
     return validateStringValues(parsed);
   }
 
@@ -82,6 +88,12 @@ export class VaultInjectorSecretsProvider implements ISecretsProvider {
     filePath: string
   ): Promise<T> {
     const content = await fs.readFile(filePath, "utf8");
+    const maxLength = 25;
+    console.log(
+      content.length > maxLength
+        ? `${content.slice(0, maxLength)} ...`
+        : "Secrets file not enough content to display"
+    );
     const secrets = parseSecretsFile(content, filePath);
 
     console.info("Vault injector secret read successfully");
