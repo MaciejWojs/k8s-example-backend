@@ -17,6 +17,7 @@ jobs:
     outputs:
       image_url: ${{ steps.set_var.outputs.image_url }}
     permissions:
+      actions: write
       contents: read
       packages: write
 
@@ -52,8 +53,8 @@ jobs:
           labels: |
             runnumber=${{ github.run_id }}
 
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=gha,scope=${{ env.IMAGE_NAME }}
+          cache-to: type=gha,mode=max,scope=${{ env.IMAGE_NAME }}
       - name: Set image URL
         id: set_var
         run: | 
