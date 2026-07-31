@@ -1,6 +1,25 @@
 import fs from "node:fs/promises";
 
+import { z } from "zod";
+
 import type { ISecretsProvider } from "./ISecretsProvider";
+
+const subDataObjectSchema = z.object({
+  data: z.record(z.string(), z.unknown())
+});
+
+function validateStringValues(
+  obj: Record<string, unknown> | object
+): Record<string, string> {
+  return Object.fromEntries(
+    Object.entries(obj).map(([key, value]) => {
+      if (typeof value !== "string") {
+        throw new Error(`Vault injector secret "${key}" must be a string`);
+      }
+      return [key, value];
+    })
+  );
+}
 
 function parseSecretsFile(
   content: string,
@@ -20,16 +39,13 @@ function parseSecretsFile(
       );
     }
 
-    return Object.fromEntries(
-      Object.entries(parsed).map(([key, value]) => {
-        if (typeof value !== "string") {
-          throw new Error(
-            `Vault injector secret "${key}" in ${filePath} must be a string`
-          );
-        }
-        return [key, value];
-      })
-    );
+    const dataObjectResult = subDataObjectSchema.safeParse(parsed);
+    if (dataObjectResult.success) {
+      const dataObject = dataObjectResult.data.data;
+      return validateStringValues(dataObject);
+    }
+
+    return validateStringValues(parsed);
   }
 
   const secrets: Record<string, string> = {};
