@@ -96,16 +96,6 @@ export class VaultInjectorSecretsProvider implements ISecretsProvider {
     );
     const secrets = parseSecretsFile(content, filePath);
 
-    const watcher = fs.watch(filePath);
-
-    for await (const event of watcher) {
-      if (event.eventType === "change") {
-        console.info(
-          `Vault injector secrets file ${filePath} has changed; reloading secrets`
-        );
-      }
-    }
-
     console.info("Vault injector secret read successfully");
 
     return secrets as T;
