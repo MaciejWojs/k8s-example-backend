@@ -112,5 +112,5 @@ jobs:
             --repo MaciejWojs/k8s-example-iac \
             --base main \
             --head "$BRANCH" \
-            --title "chore: bump backend image" \
+            --title "chore: bump backend image to $IMAGE_URL" \
             --body "Automated backend image bump from $GITHUB_REPOSITORY run $GITHUB_RUN_ID"
