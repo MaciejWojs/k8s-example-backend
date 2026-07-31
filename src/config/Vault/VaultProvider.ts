@@ -2,7 +2,9 @@ import fs from "node:fs/promises";
 
 import vault from "node-vault";
 
-export class VaultProvider {
+import type { ISecretsProvider } from "./ISecretsProvider";
+
+export class VaultProvider implements ISecretsProvider {
   readonly #client;
 
   constructor(vaultAddr: string) {

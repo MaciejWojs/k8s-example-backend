@@ -12,26 +12,61 @@ export const preEnvSchema = z.object({
   )
 });
 
-export const vaultMustHaveEnvSchema = z.object({
-  VAULT_ADDR: z
-    .string()
-    .min(1, {
-      error: "VAULT_ADDR is required and must be a non-empty string"
-    })
-    .describe("The address of the Vault server"),
-  VAULT_ROLE: z
-    .string()
-    .min(1, {
-      error: "VAULT_ROLE is required and must be a non-empty string"
-    })
-    .describe("Kubernetes auth role configured in Vault"),
-  VAULT_SECRET_PATH: z
-    .string()
-    .min(1, {
-      error: "VAULT_SECRET_PATH is required and must be a non-empty string"
-    })
-    .describe("KV v2 secret path, e.g. secret/data/myapp/config")
-});
+const vaultSecretsModeSchema = z
+  .enum(["api", "injector"], {
+    error: "VAULT_SECRETS_MODE must be 'api' or 'injector'"
+  })
+  .default("api");
+
+export const vaultMustHaveEnvSchema = z
+  .object({
+    VAULT_SECRETS_MODE: vaultSecretsModeSchema.optional(),
+    VAULT_ADDR: z.string().optional(),
+    VAULT_ROLE: z.string().optional(),
+    VAULT_SECRET_PATH: z.string().optional()
+  })
+  .transform((data) => ({
+    ...data,
+    VAULT_SECRETS_MODE: data.VAULT_SECRETS_MODE ?? "api"
+  }))
+  .pipe(
+    z.discriminatedUnion("VAULT_SECRETS_MODE", [
+      z.object({
+        VAULT_SECRETS_MODE: z.literal("api"),
+        VAULT_ADDR: z
+          .string()
+          .min(1, {
+            error: "VAULT_ADDR is required and must be a non-empty string"
+          })
+          .describe("The address of the Vault server"),
+        VAULT_ROLE: z
+          .string()
+          .min(1, {
+            error: "VAULT_ROLE is required and must be a non-empty string"
+          })
+          .describe("Kubernetes auth role configured in Vault"),
+        VAULT_SECRET_PATH: z
+          .string()
+          .min(1, {
+            error:
+              "VAULT_SECRET_PATH is required and must be a non-empty string"
+          })
+          .describe("KV v2 secret path, e.g. secret/data/myapp/config")
+      }),
+      z.object({
+        VAULT_SECRETS_MODE: z.literal("injector"),
+        VAULT_SECRET_PATH: z
+          .string()
+          .min(1, {
+            error:
+              "VAULT_SECRET_PATH is required and must be a non-empty string"
+          })
+          .describe(
+            "Filesystem path to secrets rendered by Vault Agent Injector, e.g. /vault/secrets/config"
+          )
+      })
+    ])
+  );
 
 export type VaultMustHaveENV = z.infer<typeof vaultMustHaveEnvSchema>;
 export type PreENV = z.infer<typeof preEnvSchema>;

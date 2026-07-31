@@ -7,7 +7,7 @@ import {
   preEnvSchema,
   vaultMustHaveEnvSchema
 } from "./env";
-import { VaultProvider } from "./VaultProvider";
+import { createSecretsProvider } from "./Vault/createSecretsProvider";
 
 class EnvProvider {
   private static instance: EnvProvider | undefined;
@@ -54,11 +54,13 @@ class EnvProvider {
       environment,
       "Vault must have environment variables validation failed"
     );
-    const vaultProvider = new VaultProvider(vaultEnv.VAULT_ADDR);
+    const secretsProvider = createSecretsProvider(vaultEnv);
 
     try {
-      await vaultProvider.login(vaultEnv.VAULT_ROLE);
-      const secrets = await vaultProvider.readSecret<Record<string, string>>(
+      await secretsProvider.login(
+        vaultEnv.VAULT_SECRETS_MODE === "api" ? vaultEnv.VAULT_ROLE : ""
+      );
+      const secrets = await secretsProvider.readSecret<Record<string, string>>(
         vaultEnv.VAULT_SECRET_PATH
       );
       const trimmedSecrets = Object.fromEntries(

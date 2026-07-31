@@ -11,7 +11,7 @@ The application is designed to run locally (Docker Compose), as a container imag
 - **PostgreSQL Database**: Robust data persistence with Drizzle ORM and Atlas migrations
 - **API Routes**: RESTful API endpoints for CRUD operations on posts
 - **Database Seeding**: Pre-populated sample data for development
-- **HashiCorp Vault**: Optional runtime configuration loaded from Vault via Kubernetes auth
+- **HashiCorp Vault**: Optional runtime configuration from Vault (HTTP API or files rendered by Vault Agent Injector)
 - **Kubernetes-ready**: Container image published to GHCR; cluster deployment handled by a separate IaC repository
 
 ## Prerequisites
@@ -79,7 +79,7 @@ PERFORM_DATABASE_MIGRATIONS=true
 PERFORM_DATABASE_SEEDING=true
 ```
 
-When `USE_VAULT=true`, the application authenticates to Vault at startup and loads configuration from a KV v2 secret path. See [Vault integration](#hashicorp-vault-integration) below.
+When `USE_VAULT=true`, the application loads configuration through a secrets provider at startup. By default it uses the Vault HTTP API (`VAULT_SECRETS_MODE=api`); on Kubernetes you can instead read a file mounted by [Vault Agent Injector](https://developer.hashicorp.com/vault/docs/platform/k8s/injector) (`VAULT_SECRETS_MODE=injector`). See [Vault integration](#hashicorp-vault-integration) below.
 
 ### 3. Run Database Migrations and Seed Data
 
@@ -170,23 +170,45 @@ Configuration is validated at startup with Zod (`src/config/env.ts`). Boolean va
 
 `POSTGRES_USER`, `POSTGRES_PASSWORD`, and `POSTGRES_DB` are used by Docker Compose for the database container only; the application reads `DATABASE_URL`.
 
-### Vault connection (when `USE_VAULT=true`)
+### Vault (when `USE_VAULT=true`)
+
+Set `VAULT_SECRETS_MODE` to choose how secrets are loaded. Values from Vault (API or injector file) are merged with the process environment and override variables with the same name.
+
+#### Mode `api` (default)
+
+The app authenticates to Vault with the pod ServiceAccount JWT (`/var/run/secrets/kubernetes.io/serviceaccount/token`) and reads a KV v2 path.
 
 | Variable | Description | Example (Kubernetes) |
 |----------|-------------|----------------------|
+| `VAULT_SECRETS_MODE` | Secrets backend | `api` (default) |
 | `VAULT_ADDR` | Vault server URL | `http://k8s-example-vault.vault.svc.cluster.local:8200` |
 | `VAULT_ROLE` | Kubernetes auth role configured in Vault | `myapp` |
 | `VAULT_SECRET_PATH` | KV v2 secret path | `secret/data/myapp` |
 
-When Vault is enabled, the app logs in with the pod's ServiceAccount JWT (`/var/run/secrets/kubernetes.io/serviceaccount/token`), reads the secret at `VAULT_SECRET_PATH`, and merges it with the process environment. Values from Vault override variables with the same name.
+| Workload | `VAULT_SECRETS_MODE` | `VAULT_ROLE` | `VAULT_SECRET_PATH` |
+|----------|----------------------|--------------|---------------------|
+| Backend Deployment | `api` | `myapp` | `secret/data/myapp` |
+| ArgoCD seed Job | `api` | `seed` | `secret/data/seed` |
 
-| Workload | `VAULT_ROLE` | `VAULT_SECRET_PATH` |
-|----------|--------------|---------------------|
-| Backend Deployment | `myapp` | `secret/data/myapp` |
-| ArgoCD migrate Job | `migrate` | `secret/data/migrate` |
-| ArgoCD seed Job | `seed` | `secret/data/seed` |
+#### Mode `injector`
 
-The secret in Vault should contain at least:
+Vault Agent Injector renders secrets into a file before the container starts. The app does not call the Vault API; it only reads `VAULT_SECRET_PATH` as a **filesystem path**.
+
+| Variable | Description | Example |
+|----------|-------------|---------|
+| `VAULT_SECRETS_MODE` | Use injector-rendered file | `injector` |
+| `VAULT_SECRET_PATH` | Path to the secrets file in the container | `/vault/secrets/config` |
+
+| Workload | Typical mode | Notes |
+|----------|--------------|-------|
+| ArgoCD migrate Job | `injector` | `DATABASE_URL` supplied via injector annotations in IaC |
+
+Supported file formats:
+
+- JSON object with string values, e.g. `{"DATABASE_URL":"postgresql://..."}`
+- Dotenv-style lines: `KEY=value` (lines starting with `#` are ignored)
+
+The secret (in Vault KV or in the injected file) should contain at least:
 
 ```json
 {
@@ -199,11 +221,20 @@ The secret in Vault should contain at least:
 
 ## HashiCorp Vault Integration
 
-Vault integration is implemented in `src/config/EnvProvider.ts` and `src/config/VaultProvider.ts`.
+Vault integration is implemented in `src/config/EnvProvider.ts` and `src/config/Vault/`:
+
+| File | Role |
+|------|------|
+| `ISecretsProvider.ts` | Interface (`login`, `readSecret`) |
+| `VaultProvider.ts` | Vault HTTP API + Kubernetes auth (`VAULT_SECRETS_MODE=api`) |
+| `VaultInjectorSecretsProvider.ts` | Read secrets from a file on disk (`VAULT_SECRETS_MODE=injector`) |
+| `createSecretsProvider.ts` | Factory that picks the implementation from env |
 
 **Local development** — keep `USE_VAULT=false` and set variables in `.env`.
 
-**Kubernetes** — the pod authenticates to Vault using the ServiceAccount JWT mounted at `/var/run/secrets/kubernetes.io/serviceaccount/token`. Vault must have Kubernetes auth configured with a role matching `VAULT_ROLE`. Connection settings (`USE_VAULT`, `VAULT_ADDR`, `VAULT_ROLE`, `VAULT_SECRET_PATH`) are typically provided as environment variables; sensitive values such as `DATABASE_URL` can be stored in Vault and loaded at startup.
+**Kubernetes (API mode)** — set `USE_VAULT=true`, `VAULT_SECRETS_MODE=api` (or omit the mode), and provide `VAULT_ADDR`, `VAULT_ROLE`, and `VAULT_SECRET_PATH` (KV path). Vault must have Kubernetes auth configured with a role matching `VAULT_ROLE`.
+
+**Kubernetes (injector mode)** — set `USE_VAULT=true`, `VAULT_SECRETS_MODE=injector`, and `VAULT_SECRET_PATH` to the path where the injector writes secrets (for example `/vault/secrets/config`). Injector annotations and templates are defined in the IaC repository; the application only reads the rendered file.
 
 Vault deployment and cluster configuration are managed in the [k8s-example-iac](https://github.com/MaciejWojs/k8s-example-iac) repository.
 
@@ -213,14 +244,14 @@ Kubernetes manifests, ArgoCD applications, PostgreSQL infrastructure, and Vault 
 
 **[github.com/MaciejWojs/k8s-example-iac](https://github.com/MaciejWojs/k8s-example-iac)**
 
-That repository contains everything needed to deploy the full stack (frontend, backend, PostgreSQL, Ingress, ArgoCD, Vault) on a local Kind cluster or any Kubernetes environment. Follow its [README](https://github.com/MaciejWojs/k8s-example-iac#readme) for step-by-step instructions.
+That repository contains everything needed to deploy the full stack (frontend, backend, PostgreSQL, NGINX Gateway Fabric, ArgoCD, Vault) on a local Kind cluster or any Kubernetes environment. Follow its [README](https://github.com/MaciejWojs/k8s-example-iac#readme) for step-by-step instructions.
 
 ### Expected runtime behaviour on Kubernetes
 
 When deployed via k8s-example-iac, the backend typically runs with:
 
-- `USE_VAULT=true` — configuration loaded from Vault at startup
-- `PERFORM_DATABASE_MIGRATIONS=false` and `PERFORM_DATABASE_SEEDING=false` — migrations (`atlas migrate apply` in a PreSync Job, with `DATABASE_URL` from Vault Agent Injector) and seeding (`bun seed`, Vault via `EnvProvider`) run before the Deployment is updated.
+- `USE_VAULT=true` and `VAULT_SECRETS_MODE=api` — configuration loaded from Vault at startup via the HTTP API
+- `PERFORM_DATABASE_MIGRATIONS=false` and `PERFORM_DATABASE_SEEDING=false` — migrations (`atlas migrate apply` in a PreSync Job, often with `DATABASE_URL` from Vault Agent Injector) and seeding (`bun seed`, Vault via `EnvProvider` in API mode) run before the Deployment is updated
 - Image from GHCR: `ghcr.io/maciejwojs/k8s-example-backend:<tag>`
 
 The application itself does not ship Kubernetes manifests — only the container image and the environment contract documented above.
@@ -230,7 +261,8 @@ The application itself does not ship Kubernetes manifests — only the container
 ```
 app/
 ├── src/
-│   ├── config/           # Environment validation, EnvProvider, VaultProvider
+│   ├── config/           # Environment validation, EnvProvider, Vault/
+│   │   └── Vault/        # ISecretsProvider, API & injector implementations
 │   ├── infrastructure/   # Infrastructure layer implementations
 │   │   └── db/           # Database schema and client setup
 │   ├── modules/          # Business logic modules
